@@ -20,6 +20,7 @@ var yoke = (function() {
   var FUNCTION_BINDING_SUPPORTED = (typeof Function.prototype.bind === 'function');
 
   var globalStorage = [];
+  var creatingInstance = false;
 
   /**
    * @private
@@ -70,44 +71,47 @@ var yoke = (function() {
 
   function yoke(fnOrContext, context) {
     var fn;
-
-    if (typeof fnOrContext === 'undefined') {
-      throw new Error('At least one argument must be specified!');
-    }
-
-    if (isGlobalObject(context)) {
-      var message = 'Specified context is global object!';
-      if (yoke.CONTEXT_IS_GLOBAL_OBJECT_WARNING) {
-        console.log('WARNING: ' + message);
+    if (!creatingInstance) {
+      if (typeof fnOrContext === 'undefined') {
+        throw new Error('At least one argument must be specified!');
       }
-      if (yoke.CONTEXT_IS_GLOBAL_OBJECT_EXCEPTION) {
-        throw new Error(message);
-      }
-    }
 
-    if (typeof context === 'undefined') {
-      context = fnOrContext;
-      // there might be a situations where in EcmaScript "strict mode" supplied `this` as context points to `undefined`, `window` or `global`
-      if (typeof context === 'function') {
-        var message = 'Specified context is type of function!';
-        if (yoke.CONTEXT_IS_FUNCTION_WARNING) {
+      if (isGlobalObject(context)) {
+        var message = 'Specified context is global object!';
+        if (yoke.CONTEXT_IS_GLOBAL_OBJECT_WARNING) {
           console.log('WARNING: ' + message);
         }
-        if (yoke.CONTEXT_IS_FUNCTION_EXCEPTION) {
+        if (yoke.CONTEXT_IS_GLOBAL_OBJECT_EXCEPTION) {
           throw new Error(message);
         }
       }
-    } else {
-      fn = fnOrContext;
-    }
 
-    var data = Array.prototype.slice.call(arguments, 2);
+      if (typeof context === 'undefined') {
+        context = fnOrContext;
+        // there might be a situations where in EcmaScript "strict mode" supplied `this` as context points to `undefined`, `window` or `global`
+        if (typeof context === 'function') {
+          var message = 'Specified context is type of function!';
+          if (yoke.CONTEXT_IS_FUNCTION_WARNING) {
+            console.log('WARNING: ' + message);
+          }
+          if (yoke.CONTEXT_IS_FUNCTION_EXCEPTION) {
+            throw new Error(message);
+          }
+        }
+      } else {
+        fn = fnOrContext;
+      }
 
-    if (fn) {
-      return createBinding(getStorage(), context, fn, data);
+      var data = Array.prototype.slice.call(arguments, 2);
+
+      if (fn) {
+        // don't create instance - return binding instead
+        return createBinding(getStorage(), context, fn, data);
+      }
     }
 
     if (this instanceof yoke) {
+      context = fnOrContext;
       var storage = [];
 
       this.bind = function bind(fn) {
@@ -117,8 +121,9 @@ var yoke = (function() {
       this.clear = function clear() {
         storage.length = 0;
       };
-
+      creatingInstance = false;
     } else {
+      creatingInstance = true;
       return new yoke(context);
     }
   }
