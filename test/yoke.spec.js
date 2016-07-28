@@ -55,22 +55,14 @@ describe('yoke binder: ', function() {
 
     sinon.spy(console, 'log');
 
-    var yokeInstance = yoke(Some, undefined);
+    yoke(Some, undefined);
 
-    // expect(()).to.equal(undefined);
-    // console.log('hey');
     expect(console.log.calledOnce).to.be.true;
     expect(console.log.getCall(0).args[0]).to.match(/^WARNING/i);
-
+    console.log.restore();
   });
 
   xit('should create yoke instance for restricted context', function() {
-
-    function SomeClass() {
-
-    }
-
-    sinon.spy(console, 'log');
 
   });
 
