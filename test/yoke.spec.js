@@ -47,6 +47,20 @@ describe('yoke binder: ', function() {
 
   });
 
+  it('should not reuse binding if arguments are different', function() {
+
+    function add(arg1) {
+      return this + arg1;
+    }
+
+    var boundAdd2and3 = yoke(add, 2, 3);
+    var boundAdd2and4 = yoke(add, 2, 4);
+    var boundAdd2and4_2 = yoke(add, 2, 4);
+
+    expect(boundAdd2and3).to.be.not.equal(boundAdd2and4);
+    expect(boundAdd2and4).to.be.equal(boundAdd2and4_2);
+  });
+
   it('should warn if global object or `undefined` is used as context', function() {
 
     function Some() {
@@ -62,7 +76,27 @@ describe('yoke binder: ', function() {
     console.log.restore();
   });
 
-  xit('should create yoke instance for restricted context', function() {
+  it('should create yoke instance for restricted context', function() {
+
+    var boundFunctions = [];
+
+    function Some() {
+      var yokeInstance = yoke(this);
+      var boundOne_1 = yokeInstance.bind(this.one);
+      var boundOne_2 = yokeInstance.bind(this.one);
+      boundFunctions.push(boundOne_1);
+      expect(boundOne_1).to.be.equal(boundOne_2);
+    }
+    Some.prototype.one = function () {};
+
+    new Some();
+    new Some();
+    expect(boundFunctions[0]).to.be.not.equal(boundFunctions[1]);
+
+    // TODO: fix it
+    expect(function() {
+      Some();
+    }).to.not.throw(TypeError);
 
   });
 

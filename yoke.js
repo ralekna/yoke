@@ -1,5 +1,6 @@
 /**
  * Created by Rytis Alekna (r.alekna@gmail.com) on 2016-07-20.
+ * https://github.com/ralekna/yoke
  */
 "use strict";
 var yoke = (function() {
@@ -40,7 +41,7 @@ var yoke = (function() {
    */
   function getBinding(storage, context, fn, data) {
     return storage.filter(function filterStorageItem(item) {
-      return item[0] === context && item[1] === fn; // && item[2] === data;
+      return item[0] === context && item[1] === fn && arraysContentsEqual(item[2], data);
     })[0];
   }
 
@@ -128,6 +129,26 @@ var yoke = (function() {
     }
   }
 
+  function bindMethods(own, storage, targetObject, sourceObject, context) {
+    if (typeof context === 'undefined' || context === null) {
+      throw new Error('context must be not null')
+    }
+
+    if (typeof sourceObject === 'undefined' || context === null) {
+      sourceObject = context;
+    }
+    var data = Array.prototype.slice.call(arguments, 5);
+
+    for (var name in sourceObject) {
+      if ((!own || (own && sourceObject.hasOwnProperty(name))) && typeof sourceObject[name] === 'function') {
+        targetObject[name] = createBinding(storage, context, sourceObject[name], data);
+      }
+    }
+  }
+
+  yoke.bindOwnMethods = yoke(bindMethods, null, true, globalStorage);
+  yoke.bindAllMethods = yoke(bindMethods, null, false, globalStorage);
+
   return yoke;
 
 })();
@@ -135,4 +156,16 @@ module.exports = yoke;
 
 function isGlobalObject(object) {
   return object && (object.window === object || (object.global === object) || (typeof object.setInterval === 'function'));
+}
+
+function arraysContentsEqual(array1, array2) {
+  if (array1.length !== array2.length) {
+    return false;
+  }
+  for (var i = 0; i < array1.length; i++) {
+    if (array1[i] !== array2[i]) {
+      return false;
+    }
+  }
+  return true;
 }
